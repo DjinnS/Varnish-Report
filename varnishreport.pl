@@ -21,12 +21,12 @@ use URI;
 # PARAMS
 
 # META
-my $version="0.1";
+my $version="0.1.1";
 
 # Options
 my ($o_debug,$o_help,$o_fullstats)=0;
 my ($i,$t,$o_logfile);
-my $o_top=30;
+my $o_top=10;
 
 # Timestamp date
 my ($timestamp_start,$timestamp_stop,$totalrequest,$totalbits,$duration)=0;
@@ -235,7 +235,7 @@ printf "\nLog start: %20s\nLog end  : %20s\n\n",scalar(localtime($timestamp_star
 
 # Summary stats
 $t = Text::ASCIITable->new({ headingText => 'Summary'},'outputWidth',80);
-$t->setCols('','','Rate (%)');
+$t->setCols('','','Rate');
 $t->addRow("Request",$totalrequest,sprintf("%.2f",$totalrequest/$duration)." req/s");
 $t->addRow("Bit",sprintf("%.2f",$totalbits),sprintf("%.2f",$totalbits/$duration)." Mb/s");
 $t->addRow("Hit",sprintf("%.2f",$hit),sprintf("%.2f",$hit/$duration)." hit/s");
