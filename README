@@ -42,197 +42,100 @@ ToDo:
 	- Recommandations (if possible)
 	- Color output (for better view)
 
-Output example (with anon datas ^^):
+Output example, you can get more stats with the -f option: 
 
-Varnish Report - 0.1
+Varnish Report - 0.1.2
 
 [####################] 100.0% ETA: 0:00 Processing file access.log ...
 
-Log start: Wed Dec 21 14:20:23 2011
-Log end  : Wed Dec 21 15:19:53 2011
+Log start: Wed Dec 21 16:33:46 2011
+Log end  : Thu Dec 22 12:32:39 2011
 
-.-----------------------------------.
-|              Summary              |
-+---------+---------+---------------+
-|         |         | Rate (%)      |
-+---------+---------+---------------+
-| Request |   23988 | 6.72 req/s    |
-| Bit     | 1209739 | 33886.25 Mb/s |
-| Hit     | 2338.00 | 0.65 hit/s    |
-| Miss    | 21650.0 | 6.06 hit/s    |
-'---------+---------+---------------'
+.-----------------------------------------.
+|                 Summary                 |
++---------+------------+------------------+
+|  Data   |  Value     | Rate             |
++---------+------------+------------------+
+| Request |     447736 |       6.22 req/s |
+| Bytes   | 3106449682 |       0.04 MB/s  |
+| Hit     |      50823 |       0.71 hit/s |
+| Miss    |     396913 |       5.52 hit/s |
+'---------+------------+------------------'
 
-.-----------------------------------------------.
-|              Varnish cache stats              |
-+--------+-------+-----------+-------+----------+
-| Status | Hit   | Size (Mb) | req/s | Rate (%) |
-+--------+-------+-----------+-------+----------+
-| HIT    |  2338 |     61.14 |  0.65 |     9.75 |
-| MISS   | 21650 |     54.23 |  6.06 |    90.25 |
-'--------+-------+-----------+-------+----------'
+.------------------------------------------------.
+|               Varnish cache stats              |
++--------+--------+-----------+-------+----------+
+| Status | Hit    | Size (Mb) | req/s | Rate (%) |
++--------+--------+-----------+-------+----------+
+| HIT    |  50823 |   1525.19 |  0.71 |    11.35 |
+| MISS   | 396913 |   1437.35 |  5.52 |    88.65 |
+'--------+--------+-----------+-------+----------'
 
-.------------------------------------------------------------------.
-|                         HTTP status code                         |
-+------+-------+-----------+-------+----------+---------+----------+
-| Code | Hit   | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
-+------+-------+-----------+-------+----------+---------+----------+
-|  200 | 21565 |    112.55 |  6.04 |    89.90 |    2.72 |    97.28 |
-|  500 |  1309 |      2.82 |  0.37 |     5.46 |   60.96 |    39.04 |
-|  304 |  1098 |      0.00 |  0.31 |     4.58 |   86.79 |    13.21 |
-|  301 |    12 |      0.00 |  0.00 |     0.05 |    0.00 |   100.00 |
-|  404 |     3 |      0.00 |  0.00 |     0.01 |    0.00 |   100.00 |
-|  403 |     1 |      0.00 |  0.00 |     0.00 |    0.00 |   100.00 |
-'------+-------+-----------+-------+----------+---------+----------'
+.------------------------------------------------------------------------.
+|                            HTTP status code                            |
++-----------+--------+-----------+-------+----------+---------+----------+
+| HTTP Code | Hit    | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
++-----------+--------+-----------+-------+----------+---------+----------+
+|       200 | 396830 |   2900.03 |  5.52 |    88.63 |    3.00 |    97.00 |
+|       500 |  28982 |     62.49 |  0.40 |     6.47 |   71.63 |    28.37 |
+|       304 |  21515 |      0.00 |  0.30 |     4.81 |   84.08 |    15.92 |
+|       301 |    300 |      0.00 |  0.00 |     0.07 |   20.00 |    80.00 |
+|       404 |     54 |      0.01 |  0.00 |     0.01 |   25.93 |    74.07 |
+|       403 |     33 |      0.00 |  0.00 |     0.01 |   24.24 |    75.76 |
+|       503 |     10 |      0.00 |  0.00 |     0.00 |    0.00 |   100.00 |
+|       302 |      9 |      0.01 |  0.00 |     0.00 |    0.00 |   100.00 |
+|       400 |      3 |      0.00 |  0.00 |     0.00 |    0.00 |   100.00 |
+'-----------+--------+-----------+-------+----------+---------+----------'
 
-.------------------------------------------------------------------.
-|                        HTTP Request method                       |
-+------+-------+-----------+-------+----------+---------+----------+
-| Code | Hit   | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
-+------+-------+-----------+-------+----------+---------+----------+
-| GET  | 23982 |    115.36 |  6.72 |    99.97 |    9.75 |    90.25 |
-| POST |     6 |      0.01 |  0.00 |     0.03 |    0.00 |   100.00 |
-'------+-------+-----------+-------+----------+---------+----------'
+.--------------------------------------------------------------------------.
+|                            HTTP Request method                           |
++-------------+--------+-----------+-------+----------+---------+----------+
+| HTTP Method | Hit    | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
++-------------+--------+-----------+-------+----------+---------+----------+
+| GET         | 447594 |   2962.36 |  6.22 |    99.97 |   11.35 |    88.65 |
+| POST        |    142 |      0.18 |  0.00 |     0.03 |    0.00 |   100.00 |
+'-------------+--------+-----------+-------+----------+---------+----------'
 
-.---------------------------------------------------------------------------------------------.
-|                                          MIME STATS                                         |
-+---------------------------------+-------+-----------+-------+----------+---------+----------+
-| Code                            | Hit   | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
-+---------------------------------+-------+-----------+-------+----------+---------+----------+
-| text/xml; charset=UTF-8         | 12816 |     18.31 |  3.59 |    53.43 |    7.13 |    92.87 |
-| text/html; charset=utf-8        |  3568 |      0.73 |  1.00 |    14.87 |    0.00 |   100.00 |
-| application/xml; charset=utf-8  |  3536 |     38.34 |  0.99 |    14.74 |    6.84 |    93.16 |
-| text/html                       |  2294 |      3.27 |  0.64 |     9.56 |   36.40 |    63.60 |
-| application/xml; charset=UTF-8  |   730 |      1.59 |  0.20 |     3.04 |    0.14 |    99.86 |
-| application/xml; charset: UTF-8 |   437 |      0.33 |  0.12 |     1.82 |   10.07 |    89.93 |
-| application/zip                 |   181 |     51.97 |  0.05 |     0.75 |   93.92 |     6.08 |
-| application/javascript          |   143 |      0.24 |  0.04 |     0.60 |   55.94 |    44.06 |
-| image/gif                       |    68 |      0.01 |  0.02 |     0.28 |   23.53 |    76.47 |
-| text/html; charset=UTF-8        |    62 |      0.29 |  0.02 |     0.26 |    0.00 |   100.00 |
-| image/png                       |    49 |      0.01 |  0.01 |     0.20 |   22.45 |    77.55 |
-| text/css                        |    38 |      0.01 |  0.01 |     0.16 |   60.53 |    39.47 |
-| text/html;charset=UTF-8         |    24 |      0.01 |  0.01 |     0.10 |    0.00 |   100.00 |
-| application/xml; charset: utf-8 |    15 |      0.00 |  0.00 |     0.06 |    0.00 |   100.00 |
-| text/html; charset=iso-8859-1   |    12 |      0.00 |  0.00 |     0.05 |    0.00 |   100.00 |
-| application/x-shockwave-flash   |     5 |      0.04 |  0.00 |     0.02 |   40.00 |    60.00 |
-| image/jpeg                      |     4 |      0.03 |  0.00 |     0.02 |    0.00 |   100.00 |
-| application/json; charset=UTF-8 |     4 |      0.18 |  0.00 |     0.02 |    0.00 |   100.00 |
-| -                               |     1 |      0.00 |  0.00 |     0.00 |    0.00 |   100.00 |
-| image/x-icon                    |     1 |      0.00 |  0.00 |     0.00 |    0.00 |   100.00 |
-'---------------------------------+-------+-----------+-------+----------+---------+----------'
+.-----------------------------------------------------------------------------------------------.
+|                                           MIME STATS                                          |
++----------------------------------+--------+-----------+-------+----------+---------+----------+
+| MIME                             | Hit    | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
++----------------------------------+--------+-----------+-------+----------+---------+----------+
+| text/xml; charset=UTF-8          | 217963 |    355.74 |  3.03 |    48.68 |    7.57 |    92.43 |
+| text/html; charset=utf-8         |  71931 |     14.80 |  1.00 |    16.07 |    0.00 |   100.00 |
+| application/xml; charset=utf-8   |  63258 |    884.70 |  0.88 |    14.13 |    7.55 |    92.45 |
+| text/html                        |  43236 |     71.62 |  0.60 |     9.66 |   49.32 |    50.68 |
+| application/xml; charset=UTF-8   |  21460 |     54.72 |  0.30 |     4.79 |    0.57 |    99.43 |
+| application/xml; charset: UTF-8  |  14645 |     19.47 |  0.20 |     3.27 |    5.65 |    94.35 |
+| application/zip                  |   3492 |   1180.89 |  0.05 |     0.78 |   93.36 |     6.64 |
+| application/javascript           |   3486 |      3.05 |  0.05 |     0.78 |   61.68 |    38.32 |
+| image/gif                        |   1864 |      0.15 |  0.03 |     0.42 |   37.93 |    62.07 |
+| text/html; charset=UTF-8         |   1718 |      9.44 |  0.02 |     0.38 |    0.35 |    99.65 |
+| application/xml; charset: utf-8  |   1386 |      0.36 |  0.02 |     0.31 |    4.18 |    95.82 |
+| image/png                        |   1113 |      0.90 |  0.02 |     0.25 |   35.76 |    64.24 |
+| text/css                         |    860 |      0.14 |  0.01 |     0.19 |   65.58 |    34.42 |
+| text/html;charset=UTF-8          |    480 |      0.30 |  0.01 |     0.11 |    0.00 |   100.00 |
+| text/html; charset=iso-8859-1    |    315 |      0.00 |  0.00 |     0.07 |   20.00 |    80.00 |
+| image/jpeg                       |    195 |      3.66 |  0.00 |     0.04 |    6.67 |    93.33 |
+| application/x-shockwave-flash    |    114 |      0.95 |  0.00 |     0.03 |   28.07 |    71.93 |
+| text/javascript; charset: UTF-8  |    110 |      0.18 |  0.00 |     0.02 |   24.55 |    75.45 |
+| application/json; charset=UTF-8  |     54 |     12.76 |  0.00 |     0.01 |    0.00 |   100.00 |
+| -                                |     14 |      0.00 |  0.00 |     0.00 |    0.00 |   100.00 |
+| video/x-ms-wmv                   |     14 |    348.66 |  0.00 |     0.00 |    0.00 |   100.00 |
+| text/plain; charset=UTF-8        |     10 |      0.00 |  0.00 |     0.00 |    0.00 |   100.00 |
+| image/x-icon                     |      9 |      0.01 |  0.00 |     0.00 |    0.00 |   100.00 |
+| application/json; charset: utf-8 |      8 |      0.01 |  0.00 |     0.00 |    0.00 |   100.00 |
+| video/mp4                        |      1 |      0.00 |  0.00 |     0.00 |    0.00 |   100.00 |
+'----------------------------------+--------+-----------+-------+----------+---------+----------'
 
-.----------------------------------------------------------------------------------------------.
-|                                             VHOST                                            |
-+----------------------------------+-------+-----------+-------+----------+---------+----------+
-| Code                             | Hit   | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
-+----------------------------------+-------+-----------+-------+----------+---------+----------+
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 20015 |    113.89 |  5.61 |    83.44 |   11.02 |    88.98 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  3568 |      0.73 |  1.00 |    14.87 |    0.00 |   100.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   381 |      0.73 |  0.11 |     1.59 |   34.65 |    65.35 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |    24 |      0.01 |  0.01 |     0.10 |    0.00 |   100.00 |
-'----------------------------------+-------+-----------+-------+----------+---------+----------'
-
-.---------------------------------------------------------------------------.
-|                               TOP 10 clients                              |
-+----------------+------+-----------+-------+----------+---------+----------+
-| Code           | Hit  | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
-+----------------+------+-----------+-------+----------+---------+----------+
-| xxxxxxxxxxxxxx | 9295 |     21.38 |  2.60 |    38.75 |   10.26 |    89.74 |
-| xxxxxxxxxxxxxx | 9222 |     21.64 |  2.58 |    38.44 |   10.74 |    89.26 |
-| xxxxxxxxxxxxxx | 1808 |      0.38 |  0.51 |     7.54 |    0.00 |   100.00 |
-| xxxxxxxxxxxxxx |  892 |      0.18 |  0.25 |     3.72 |    0.00 |   100.00 |
-| xxxxxxxxxxxxxx |  892 |      0.18 |  0.25 |     3.72 |    0.00 |   100.00 |
-| xxxxxxxxxxxxxx |  735 |     17.38 |  0.21 |     3.06 |   12.11 |    87.89 |
-| xxxxxxxxxxxxxx |  286 |      0.49 |  0.08 |     1.19 |   38.81 |    61.19 |
-| xxxxxxxxxxxxxx |  121 |      0.26 |  0.03 |     0.50 |    4.96 |    95.04 |
-| xxxxxxxxxxxxxx |   57 |      1.56 |  0.02 |     0.24 |   14.04 |    85.96 |
-| xxxxxxxxxxxxxx |   55 |      0.23 |  0.02 |     0.23 |   36.36 |    63.64 |
-| xxxxxxxxxxxxxx |   42 |      0.03 |  0.01 |     0.18 |    9.52 |    90.48 |
-| xxxxxxxxxxxxxx |   42 |      0.11 |  0.01 |     0.18 |    0.00 |   100.00 |
-'----------------+------+-----------+-------+----------+---------+----------'
-
-.---------------------------------------------------------------------------------------------------------------------------------------------.
-|                                                                  TOP 10 URI                                                                 |
-+----------------------------------------------------------------------------------+------+-----------+-------+----------+---------+----------+
-| Code                                                                             | Hit  | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
-+----------------------------------------------------------------------------------+------+-----------+-------+----------+---------+----------+
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 3568 |      0.73 |  1.00 |    14.87 |    0.00 |   100.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  230 |      0.50 |  0.06 |     0.96 |   95.22 |     4.78 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  182 |      0.39 |  0.05 |     0.76 |   93.41 |     6.59 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  182 |     51.97 |  0.05 |     0.76 |   93.41 |     6.59 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  126 |      0.27 |  0.04 |     0.53 |   91.27 |     8.73 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   82 |      0.18 |  0.02 |     0.34 |   87.80 |    12.20 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   67 |      0.14 |  0.02 |     0.28 |   85.07 |    14.93 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   39 |      0.08 |  0.01 |     0.16 |   79.49 |    20.51 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   39 |      0.02 |  0.01 |     0.16 |    0.00 |   100.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   31 |      0.07 |  0.01 |     0.13 |   77.42 |    22.58 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   31 |      0.01 |  0.01 |     0.13 |   25.81 |    74.19 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   25 |      0.05 |  0.01 |     0.10 |   72.00 |    28.00 |
-'----------------------------------------------------------------------------------+------+-----------+-------+----------+---------+----------'
-
-.---------------------------------------------------------------------------------------------------------------------------------.
-|                                                          TOP 10 HIT URI                                                         |
-+----------------------------------------------------------------------------------+-----+-----------+-------+----------+---------+
-| Code                                                                             | Hit | Size (Mb) | req/s | Rate (%) | hit (%) |
-+----------------------------------------------------------------------------------+-----+-----------+-------+----------+---------+
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 219 |      0.50 |  0.06 |     0.91 |   95.22 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 170 |     51.97 |  0.05 |     0.71 |   93.41 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 170 |      0.39 |  0.05 |     0.71 |   93.41 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 115 |      0.27 |  0.03 |     0.48 |   91.27 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  72 |      0.18 |  0.02 |     0.30 |   87.80 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  57 |      0.14 |  0.02 |     0.24 |   85.07 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  31 |      0.08 |  0.01 |     0.13 |   79.49 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  24 |      0.07 |  0.01 |     0.10 |   77.42 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  20 |      4.65 |  0.01 |     0.08 |   86.96 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  19 |      5.86 |  0.01 |     0.08 |   86.36 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  18 |      0.05 |  0.01 |     0.08 |   72.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  11 |      0.03 |  0.00 |     0.05 |   78.57 |
-'----------------------------------------------------------------------------------+-----+-----------+-------+----------+---------'
-
-.-----------------------------------------------------------------------------------------------------------------------------------.
-|                                                          TOP 10 MISS URI                                                          |
-+----------------------------------------------------------------------------------+------+-----------+-------+----------+----------+
-| Code                                                                             | Hit  | Size (Mb) | req/s | Rate (%) | miss (%) |
-+----------------------------------------------------------------------------------+------+-----------+-------+----------+----------+
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 3568 |      0.73 |  1.00 |    14.87 |   100.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   39 |      0.02 |  0.01 |     0.16 |   100.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   23 |      0.01 |  0.01 |     0.10 |    74.19 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   22 |      0.00 |  0.01 |     0.09 |    95.65 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   12 |      0.00 |  0.00 |     0.05 |   100.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   12 |      0.39 |  0.00 |     0.05 |     6.59 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   12 |     51.97 |  0.00 |     0.05 |     6.59 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   11 |      0.50 |  0.00 |     0.05 |     4.78 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   11 |      0.27 |  0.00 |     0.05 |     8.73 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   10 |      0.18 |  0.00 |     0.04 |    12.20 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   10 |      0.14 |  0.00 |     0.04 |    14.93 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   10 |      0.00 |  0.00 |     0.04 |    66.67 |
-'----------------------------------------------------------------------------------+------+-----------+-------+----------+----------'
-
-.-----------------------------------------------------------------------------------------------------------------------.
-|                                                       TOP 10 404                                                      |
-+----------------------------------------------------------------------------------+-----+-----------+-------+----------+
-| Code                                                                             | Hit | Size (Mb) | req/s | Rate (%) |
-+----------------------------------------------------------------------------------+-----+-----------+-------+----------+
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   1 |      0.00 |  0.00 |     0.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   1 |      0.00 |  0.00 |     0.00 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |   1 |      0.00 |  0.00 |     0.00 |
-'----------------------------------------------------------------------------------+-----+-----------+-------+----------'
-
-.-----------------------------------------------------------------------------------------------------------------------.
-|                                                       TOP 10 500                                                      |
-+----------------------------------------------------------------------------------+-----+-----------+-------+----------+
-| Code                                                                             | Hit | Size (Mb) | req/s | Rate (%) |
-+----------------------------------------------------------------------------------+-----+-----------+-------+----------+
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 230 |      0.50 |  0.06 |     0.96 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 182 |      0.39 |  0.05 |     0.76 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 126 |      0.27 |  0.04 |     0.53 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  82 |      0.18 |  0.02 |     0.34 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  67 |      0.14 |  0.02 |     0.28 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  39 |      0.08 |  0.01 |     0.16 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  31 |      0.07 |  0.01 |     0.13 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  25 |      0.05 |  0.01 |     0.10 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  15 |      0.03 |  0.00 |     0.06 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  14 |      0.03 |  0.00 |     0.06 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  13 |      0.03 |  0.00 |     0.05 |
-| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  12 |      0.03 |  0.00 |     0.05 |
-'----------------------------------------------------------------------------------+-----+-----------+-------+----------'
+.-----------------------------------------------------------------------------------------------.
+|                                             VHOST                                             |
++----------------------------------+--------+-----------+-------+----------+---------+----------+
+| VHOST                            | Hit    | Size (Mb) | req/s | Rate (%) | hit (%) | miss (%) |
++----------------------------------+--------+-----------+-------+----------+---------+----------+
+| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx | 365560 |   2578.21 |  5.08 |    81.65 |   12.83 |    87.17 |
+| xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |  71890 |     14.74 |  1.00 |    16.06 |    0.00 |   100.00 |
+| xxxxxxxxxxxxxxxxxxxxxxx          |   9806 |    369.29 |  0.14 |     2.19 |   40.11 |    59.89 |
+| xxxxxxxxxxxxxxxxxxxxxxx          |    480 |      0.30 |  0.01 |     0.11 |    0.00 |   100.00 |
+'----------------------------------+--------+-----------+-------+----------+---------+----------'
 
