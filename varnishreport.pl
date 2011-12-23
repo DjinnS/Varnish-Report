@@ -6,6 +6,21 @@
 #
 # http://github.com/djinns/Varnish-Report
 #
+# Copyright (C) 2011 djinns@chninkel.net
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 #------------------------------------------------
 # LIBS
@@ -29,7 +44,7 @@ my ($i,$t,$o_logfile);
 my $o_top=10;
 
 # Timestamp date
-my ($timestamp_start,$timestamp_stop,$totalrequest,$totalbits,$duration)=0;
+my ($timestamp_start,$timestamp_stop,$totalrequest,$totalbytes,$duration)=0;
 my %mon2num = qw(jan 1  feb 2  mar 3  apr 4  may 5  jun 6 jul 7  aug 8  sep 9  oct 10 nov 11 dec 12);
 
 # Clients
@@ -134,15 +149,12 @@ sub parsing {
 					second     => $sec,
 				);
 
-                if($o_debug) {
-                    print "Varnish: $varnish\nClient: $client\nDate: ".$date->epoch()."\nStatus: $status\nSize: $size\nRequest: $request\nReferer: $referer\nAgent: $uagent\n\n";
-					print "Day: $day\nMonth: $month\nYear: $year\nHour: $hour\nMin: $min\nSec: $sec\n";
-                }
-
                 # if the regexp match
                 if($client) {
                         $totalrequest += 1;
-                        $totalbits   += $size;
+                        $totalbytes += $size;
+
+						# Date and timestamp
                         $timestamp_stop=$date->epoch();
                         $timestamp_start = ($timestamp_start==0) ? $date->epoch() : $timestamp_start;
 
@@ -159,8 +171,10 @@ sub parsing {
                         # URI & Vhost
                         $h_vhost{$uri->host} = ($h_vhost{$uri->host}) ? $h_vhost{$uri->host}+1 : 1;
                         $h_vhost_bytes{$uri->host} = ($h_vhost_bytes{$uri->host}) ? $h_vhost_bytes{$uri->host}+$size : $size;
-                        $h_uri{$uri->path_query} = ($h_uri{$uri->path_query}) ? $h_uri{$uri->path_query}+1 : 1;
-                        $h_uri_bytes{$uri->path_query} = ($h_uri_bytes{$uri->path_query}) ? $h_uri_bytes{$uri->path_query}+$size : $size;
+						if($o_fullstats) {
+	                        $h_uri{$uri->path_query} = ($h_uri{$uri->path_query}) ? $h_uri{$uri->path_query}+1 : 1;
+    	                    $h_uri_bytes{$uri->path_query} = ($h_uri_bytes{$uri->path_query}) ? $h_uri_bytes{$uri->path_query}+$size : $size;
+						}
                         
 						# bytes by mime type
 						$h_uri_cbytes{$uri->path_query} = ($h_uri_cbytes{$uri->path_query}) ? $h_uri_cbytes{$uri->path_query} : $size;
@@ -168,11 +182,12 @@ sub parsing {
                         # HTTP CODE
                         $h_httpcode{$status} = ($h_httpcode{$status}) ? $h_httpcode{$status}+1 : 1;
                         $h_httpcode_bytes{$status} = ($h_httpcode_bytes{$status}) ? $h_httpcode_bytes{$status}+$size : $size;
-                        if($status =~ /404/) {
+
+                        if($status =~ /404/ && $o_fullstats) {
                                $h_httpcode_404{$uri->path_query} = ($h_httpcode_404{$uri->path_query}) ? $h_httpcode_404{$uri->path_query}+1 : 1;
                                $h_httpcode_404_bytes{$uri->path_query} = ($h_httpcode_404_bytes{$uri->path_query}) ? $h_httpcode_404_bytes{$uri->path_query}+$size : $size;
                         }
-                        if($status =~ /500/) {
+                        if($status =~ /500/ && $o_fullstats) {
                                $h_httpcode_500{$uri->path_query} = ($h_httpcode_500{$uri->path_query}) ? $h_httpcode_500{$uri->path_query}+1 : 1;
                                $h_httpcode_500_bytes{$uri->path_query} = ($h_httpcode_500_bytes{$uri->path_query}) ? $h_httpcode_500_bytes{$uri->path_query}+$size : $size;
                         }
@@ -182,8 +197,10 @@ sub parsing {
                         $h_mime_bytes{$mime} = ($h_mime_bytes{$mime}) ? $h_mime_bytes{$mime}+$size : $size;
 
                         # Client
-                        $h_client{$client} = ($h_client{$client}) ? $h_client{$client}+1 : 1;
-                        $h_client_bytes{$client} = ($h_client_bytes{$client}) ? $h_client_bytes{$client}+$size : $size;
+						if($o_fullstats) {
+	                        $h_client{$client} = ($h_client{$client}) ? $h_client{$client}+1 : 1;
+    	                    $h_client_bytes{$client} = ($h_client_bytes{$client}) ? $h_client_bytes{$client}+$size : $size;
+						}
 
                         # HIT & MISS
                         if($varnish =~ /hit/) {
@@ -193,9 +210,11 @@ sub parsing {
                                 $h_vhost_hit{$uri->host}     = ($h_vhost_hit{$uri->host})     ? $h_vhost_hit{$uri->host}+1     : 1;
                                 $h_method_hit{$method}       = ($h_method_hit{$method})       ? $h_method_hit{$method}+1       : 1;
                                 $h_httpcode_hit{$status}     = ($h_httpcode_hit{$status})     ? $h_httpcode_hit{$status}+1     : 1;
-                                $h_uri_hit{$uri->path_query} = ($h_uri_hit{$uri->path_query}) ? $h_uri_hit{$uri->path_query}+1 : 1;
-                                $h_client_hit{$client}       = ($h_client_hit{$client})       ? $h_client_hit{$client}+1       : 1;
                                 $h_mime_hit{$mime}           = ($h_mime_hit{$mime})           ? $h_mime_hit{$mime}+1           : 1;
+								if($o_fullstats) {
+	                                $h_uri_hit{$uri->path_query} = ($h_uri_hit{$uri->path_query}) ? $h_uri_hit{$uri->path_query}+1 : 1;
+    	                            $h_client_hit{$client}       = ($h_client_hit{$client})       ? $h_client_hit{$client}+1       : 1;
+								}
                         }
                         else {
                                 $miss += 1;
@@ -204,9 +223,11 @@ sub parsing {
                                 $h_vhost_miss{$uri->host}     = ($h_vhost_miss{$uri->host})     ? $h_vhost_miss{$uri->host}+1     : 1;
                                 $h_method_miss{$method}       = ($h_method_miss{$method})       ? $h_method_miss{$method}+1       : 1;
                                 $h_httpcode_miss{$status}     = ($h_httpcode_miss{$status})     ? $h_httpcode_miss{$status}+1     : 1;
-                                $h_uri_miss{$uri->path_query} = ($h_uri_miss{$uri->path_query}) ? $h_uri_miss{$uri->path_query}+1 : 1;
-                                $h_client_miss{$client}       = ($h_client_miss{$client})       ? $h_client_miss{$client}+1       : 1;
                                 $h_mime_miss{$mime}           = ($h_mime_miss{$mime})           ? $h_mime_miss{$mime}+1           : 1;
+								if($o_fullstats) {
+	                                $h_uri_miss{$uri->path_query} = ($h_uri_miss{$uri->path_query}) ? $h_uri_miss{$uri->path_query}+1 : 1;
+    	                            $h_client_miss{$client}       = ($h_client_miss{$client})       ? $h_client_miss{$client}+1       : 1;
+								}
                         }
                 }
 
@@ -235,16 +256,15 @@ printf "\nLog start: %20s\nLog end  : %20s\n\n",scalar(localtime($timestamp_star
 
 # Summary stats
 $t = Text::ASCIITable->new({ headingText => 'Summary'},'outputWidth',80);
-$t->setCols('','','Rate');
-$t->addRow("Request",$totalrequest,sprintf("%.2f",$totalrequest/$duration)." req/s");
-$t->addRow("Bit",sprintf("%.2f",$totalbits),sprintf("%.2f",$totalbits/$duration)." Mb/s");
-$t->addRow("Hit",sprintf("%.2f",$hit),sprintf("%.2f",$hit/$duration)." hit/s");
-$t->addRow("Miss",sprintf("%.2f",$miss),sprintf("%.2f",$miss/$duration)." hit/s");
+$t->setCols(' Data',' Value','Rate ');
+$t->addRow("Request",$totalrequest,sprintf("%10.2f",$totalrequest/$duration)." req/s");
+$t->addRow("Bytes",$totalbytes,sprintf("%10.2f",$totalbytes/$duration/1024/1024)." MB/s");
+$t->addRow("Hit",$hit,sprintf("%10.2f",$hit/$duration)." hit/s");
+$t->addRow("Miss",$miss,sprintf("%10.2f",$miss/$duration)." hit/s");
 print "$t\n";
 
 # Cache stats
 $t = Text::ASCIITable->new({ headingText => 'Varnish cache stats' },'outputWidth',80);
-$t->setOptions('outputWidth',80);
 $t->setCols('Status','Hit','Size (Mb)','req/s','Rate (%)');
 $t->addRow("HIT",$hit,sprintf("%.2f",$hit_bytes/1024/1024),sprintf("%.2f",$hit/$duration),sprintf("%.2f",($hit*100)/$totalrequest));
 $t->addRow("MISS",$miss,sprintf("%.2f",$miss_bytes/1024/1024),sprintf("%.2f",$miss/$duration),sprintf("%.2f",($miss*100)/$totalrequest));
@@ -252,7 +272,7 @@ print "$t\n";
 
 # HTTP CODE STATS
 $t = Text::ASCIITable->new({ headingText => 'HTTP status code' },'outputWidth',80);
-$t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+$t->setCols('HTTP Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
 
 foreach my $k (sort {$h_httpcode{$b} <=> $h_httpcode{$a}} keys(%h_httpcode) ) {
 	$t->addRow($k,
@@ -267,7 +287,7 @@ print "$t\n";
 
 # HTTP METHOD STATS
 $t = Text::ASCIITable->new({ headingText => 'HTTP Request method' },'outputWidth',80);
-$t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+$t->setCols('HTTP Method','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
 
 foreach my $k (sort {$h_method{$b} <=> $h_method{$a}} keys(%h_method) ) {
 	$t->addRow($k,
@@ -282,7 +302,7 @@ print "$t\n";
 
 # MIME STATS
 $t = Text::ASCIITable->new({ headingText => 'MIME STATS' },'outputWidth',80);
-$t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+$t->setCols('MIME','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
 
 foreach my $k (sort {$h_mime{$b} <=> $h_mime{$a}} keys(%h_mime)) {
     $t->addRow($k,
@@ -297,7 +317,7 @@ print "$t\n";
 
 # HTTP VHOST STATS
 $t = Text::ASCIITable->new({ headingText => 'VHOST' },'outputWidth',80);
-$t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+$t->setCols('VHOST','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
 
 foreach my $k (sort {$h_vhost{$b} <=> $h_vhost{$a}} keys(%h_vhost) ) {
     $t->addRow($k,
@@ -314,7 +334,7 @@ if($o_fullstats) {
 
 	# TOP CLIENT
 	$t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' clients' },'outputWidth',80);
-	$t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+	$t->setCols('Client','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
 
 	$i=0;
 	foreach my $k (sort {$h_client{$b} <=> $h_client{$a}} keys(%h_client) ) {
@@ -334,7 +354,7 @@ if($o_fullstats) {
 
 	# TOP URL
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' URI' },'outputWidth',80);
-    $t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+    $t->setCols('URI','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
 
 	$i=0;
 	foreach my $k (sort {$h_uri{$b} <=> $h_uri{$a}} keys(%h_uri) ) {
@@ -353,7 +373,7 @@ if($o_fullstats) {
 
 	# TOP HIT URI
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' HIT URI' },'outputWidth',80);
-    $t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)');
+    $t->setCols('Hit URI','Hit','Size (Mb)','req/s','Rate (%)','hit (%)');
 
     $i=0;
 	foreach my $k (sort {$h_uri_hit{$b} <=> $h_uri_hit{$a}} keys(%h_uri_hit) ) {
@@ -371,7 +391,7 @@ if($o_fullstats) {
 
 	# TOP MISS URI
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' MISS URI' },'outputWidth',80);
-    $t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)','miss (%)');
+    $t->setCols('Miss URI','Hit','Size (Mb)','req/s','Rate (%)','miss (%)');
 
     $i=0;
 	foreach my $k (sort {$h_uri_miss{$b} <=> $h_uri_miss{$a}} keys(%h_uri_miss) ) {
@@ -389,7 +409,7 @@ if($o_fullstats) {
 
     # TOP 404
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' 404' },'outputWidth',80);
-    $t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)');
+    $t->setCols('404 URI','Hit','Size (Mb)','req/s','Rate (%)');
 
     $i=0;
 	foreach my $k (sort {$h_httpcode_404{$b} <=> $h_httpcode_404{$a}} keys(%h_httpcode_404) ) {
@@ -406,7 +426,7 @@ if($o_fullstats) {
 
     # TOP 500
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' 500' },'outputWidth',80);
-    $t->setCols('Code','Hit','Size (Mb)','req/s','Rate (%)');
+    $t->setCols('500 URI','Hit','Size (Mb)','req/s','Rate (%)');
 
     $i=0;
 	foreach my $k (sort {$h_httpcode_500{$b} <=> $h_httpcode_500{$a}} keys(%h_httpcode_500) ) {
