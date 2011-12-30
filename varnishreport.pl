@@ -36,16 +36,16 @@ use URI;
 # PARAMS
 
 # META
-my $version="0.1.2";
+my $version="0.2.0";
 
 # Options
-my ($o_debug,$o_help,$o_fullstats)=0;
+my ($o_help,$o_fullstats,$o_progress,$o_fulluri)=0;
 my ($i,$t,$o_logfile);
 my $o_top=10;
 
 # Timestamp date
 my ($timestamp_start,$timestamp_stop,$totalrequest,$totalbytes,$duration)=0;
-my %mon2num = qw(jan 1  feb 2  mar 3  apr 4  may 5  jun 6 jul 7  aug 8  sep 9  oct 10 nov 11 dec 12);
+my %mon2num = qw(jan 1 feb 2 mar 3 apr 4 may 5 jun 6 jul 7 aug 8 sep 9 oct 10 nov 11 dec 12);
 
 # Clients
 my (%h_client,%h_client_bytes,%h_client_hit,%h_client_miss)=();
@@ -79,20 +79,20 @@ my (%h_parent,%h_parent_bytes)=();
 # Check options from the command line
 #
 sub check_options {
-    Getopt::Long::Configure ("bundling");
-    GetOptions(
-        'l:s'   => \$o_logfile,         'logfile:s'    => \$o_logfile,
-        't:s'   => \$o_top,             'top:s'        => \$o_top,
-        'f'     => \$o_fullstats,       'fullstats'    => \$o_fullstats,
-        'd'     => \$o_debug,           'debug'        => \$o_debug,
-        'h'     => \$o_help,            'help'         => \$o_help,
-        );
+	Getopt::Long::Configure ("bundling");
+	GetOptions(
+		'l:s'	=> \$o_logfile,		'logfile:s'		=> \$o_logfile,
+		't:s'	=> \$o_top,			'top:s'			=> \$o_top,
+		'f'		=> \$o_fullstats,	'fullstats'		=> \$o_fullstats,
+		'p'		=> \$o_progress,	'progressbar'	=> \$o_progress,
+		'u'		=> \$o_fulluri,		'fulluri'		=> \$o_fulluri,
+		'h'		=> \$o_help,		'help'			=> \$o_help
+	);
 
     if (!defined($o_logfile)||($o_help)) {
-                usage();
-                exit;
-        }
-
+		usage();
+		exit;
+	}
 }
 
 #----------------
@@ -101,7 +101,23 @@ sub check_options {
 # Show usage of the script
 #
 sub usage {
-        print "Usage: $0 \n\t-h/--help\n \t-d/--debug\n \t-l/--logfile /path/to/access.log\n \t[-t/--top 30]\n \t[-f/--fulstats]\n\n";
+	print <<"EOT";
+Usage of $0
+
+Required parameters:
+	-l,--logfile /path/to/access/log\t: path to the log file
+	
+Optional parameters:
+	-f,--fullstats\t: print extra statitics. Default none.
+	-t,--top\t: number of lines for of extra statitics. Default 10.
+	-u,--fulluri\t: use full uri (URI+query string) in the full statistics mode. Default none.
+	-p,--progress\t: print progress bar. Default none.
+
+	-h,--help\t: print this menu
+
+	Report bugs or ask for new options: https://github.com/DjinnS/Varnish-Report
+
+EOT
 }
 
 #----------------
@@ -110,136 +126,162 @@ sub usage {
 # Parsing access log file and build hashes tables for statistics
 #
 sub parsing {
-
-        my ($varnish,$client,$date,$status,$size,$request,$referer,$uagent,$mime);
+	my ($varnish,$client,$date,$status,$size,$request,$referer,$uagent,$mime);
 	
-		# real date
-		my ($year,$month,$day,$hour,$min,$sec);
+	# real date
+	my ($year,$month,$day,$hour,$min,$sec);
 
-        open(my $fd,"<",$o_logfile) or die "Can't accesslog file: $!";
+	open(my $fd,"<",$o_logfile) or die "Can't accesslog file: $!";
 
-		# get size for progress bar
-    	my $filesize = -s $o_logfile;
+	# get size for progress bar
+	my $filesize = -s $o_logfile;
 
-		# progressbar
-		init_progress;
-		my $bytesread=0;
-		my $totalread=0;
+	# progressbar
+	if($o_progress) { init_progress; }
 
-        while (<$fd>) {
+	my $bytesread=0;
+	my $totalread=0;
 
-				$bytesread += (length($_));
-				$totalread = sprintf("%.2f",($bytesread*100)/$filesize);
+	while (<$fd>) {
 
-                ($varnish,$client,$date,$status,$size,$request,$referer,$uagent,$mime) = /(\[.*-.*\])\s(\d+\.\d+\.\d+\.\d+)\s(\[.*\])\s(.*)\s(.*)\s(\".*\")\s(\".*\")\s(.*)\s\((.*)\)/; 
+		$bytesread += (length($_));
+		$totalread = sprintf("%.2f",($bytesread*100)/$filesize);
 
-				# fix for size=0
-				if($size =~ /-/) { $size=0; }
+		($varnish,$client,$date,$status,$size,$request,$referer,$uagent,$mime) = /(\[.*-.*\])\s(\d+\.\d+\.\d+\.\d+)\s(\[.*\])\s(.*)\s(.*)\s(\".*\")\s(\".*\")\s(.*)\s\((.*)\)/; 
 
-				# make real date
-				$_ = $date;
-				($day,$month,$year,$hour,$min,$sec) = /\[(.*)\/(.*)\/(.*):(.*):(.*):(.*)\s.*\]/ or warn "Error, record skiped: $_";
+		# fix for size=0
+		if($size =~ /-/) { $size=0; }
 
-				$date = DateTime->new(
-					year       => $year,
-					month      => $mon2num{lc substr($month,0,3)},
-					day        => $day,
-					hour       => $hour,
-					minute     => $min,
-					second     => $sec,
-				);
+		# make real date
+		$_ = $date;
 
-                # if the regexp match
-                if($client) {
-                        $totalrequest += 1;
-                        $totalbytes += $size;
+		($day,$month,$year,$hour,$min,$sec) = /\[(.*)\/(.*)\/(.*):(.*):(.*):(.*)\s.*\]/;
 
-						# Date and timestamp
-                        $timestamp_stop=$date->epoch();
-                        $timestamp_start = ($timestamp_start==0) ? $date->epoch() : $timestamp_start;
+		$date = DateTime->new(
+			year	=> $year,
+			month	=> $mon2num{lc substr($month,0,3)},
+			day		=> $day,
+			hour	=> $hour,
+			minute	=> $min,
+			second	=> $sec
+		);
 
-                        # HTTP Method / vhost / URI / proto
-						$request =~ tr/"//d;
-						$_ = $request;
-						($method,$uri,$proto) = /(.*)\s(http.*)\s(.*)/;
+		# if the regexp match
+		if($client) {
+			$totalrequest += 1;
+			$totalbytes += $size;
 
-						$uri = URI->new($uri);
+			# Date and timestamp
+			$timestamp_stop=$date->epoch();
+			$timestamp_start = ($timestamp_start==0) ? $date->epoch() : $timestamp_start;
 
-                        $h_method{$method} = ($h_method{$method}) ? $h_method{$method}+1 : 1;
-                        $h_method_bytes{$method} = ($h_method_bytes{$method}) ? $h_method_bytes{$method}+$size : $size;
+			# HTTP Method / vhost / URI / proto
+			$request =~ tr/"//d;
+			$_ = $request;
+			($method,$uri,$proto) = /(.*)\s(http.*)\s(.*)/;
 
-                        # URI & Vhost
-                        $h_vhost{$uri->host} = ($h_vhost{$uri->host}) ? $h_vhost{$uri->host}+1 : 1;
-                        $h_vhost_bytes{$uri->host} = ($h_vhost_bytes{$uri->host}) ? $h_vhost_bytes{$uri->host}+$size : $size;
-						if($o_fullstats) {
-	                        $h_uri{$uri->path_query} = ($h_uri{$uri->path_query}) ? $h_uri{$uri->path_query}+1 : 1;
-    	                    $h_uri_bytes{$uri->path_query} = ($h_uri_bytes{$uri->path_query}) ? $h_uri_bytes{$uri->path_query}+$size : $size;
-						}
-                        
-						# bytes by mime type
-						$h_uri_cbytes{$uri->path_query} = ($h_uri_cbytes{$uri->path_query}) ? $h_uri_cbytes{$uri->path_query} : $size;
+			$uri = URI->new($uri);
 
-                        # HTTP CODE
-                        $h_httpcode{$status} = ($h_httpcode{$status}) ? $h_httpcode{$status}+1 : 1;
-                        $h_httpcode_bytes{$status} = ($h_httpcode_bytes{$status}) ? $h_httpcode_bytes{$status}+$size : $size;
+			$h_method{$method} 			= ($h_method{$method})			? $h_method{$method}+1 : 1;
+			$h_method_bytes{$method}	= ($h_method_bytes{$method})	? $h_method_bytes{$method}+$size : $size;
 
-                        if($status =~ /404/ && $o_fullstats) {
-                               $h_httpcode_404{$uri->path_query} = ($h_httpcode_404{$uri->path_query}) ? $h_httpcode_404{$uri->path_query}+1 : 1;
-                               $h_httpcode_404_bytes{$uri->path_query} = ($h_httpcode_404_bytes{$uri->path_query}) ? $h_httpcode_404_bytes{$uri->path_query}+$size : $size;
-                        }
-                        if($status =~ /500/ && $o_fullstats) {
-                               $h_httpcode_500{$uri->path_query} = ($h_httpcode_500{$uri->path_query}) ? $h_httpcode_500{$uri->path_query}+1 : 1;
-                               $h_httpcode_500_bytes{$uri->path_query} = ($h_httpcode_500_bytes{$uri->path_query}) ? $h_httpcode_500_bytes{$uri->path_query}+$size : $size;
-                        }
+			# URI & Vhost
+			$h_vhost{$uri->host} 		= ($h_vhost{$uri->host}) 		? $h_vhost{$uri->host}+1 : 1;
+			$h_vhost_bytes{$uri->host}	= ($h_vhost_bytes{$uri->host})	? $h_vhost_bytes{$uri->host}+$size : $size;
 
-                        # Mime stats
-                        $h_mime{$mime} = ($h_mime{$mime}) ? $h_mime{$mime}+1 : 1;
-                        $h_mime_bytes{$mime} = ($h_mime_bytes{$mime}) ? $h_mime_bytes{$mime}+$size : $size;
+			if($o_fullstats) {
+				if($o_fulluri) {
+					$h_uri{$uri->path_query}		= ($h_uri{$uri->path_query})		? $h_uri{$uri->path_query}+1 : 1;
+					$h_uri_bytes{$uri->path_query}	= ($h_uri_bytes{$uri->path_query})	? $h_uri_bytes{$uri->path_query}+$size : $size;
+				} else {
+					$h_uri{$uri->path}			= ($h_uri{$uri->path})			? $h_uri{$uri->path}+1 : 1;
+					$h_uri_bytes{$uri->path}	= ($h_uri_bytes{$uri->path})	? $h_uri_bytes{$uri->path}+$size : $size;
+				}
+			}
 
-                        # Client
-						if($o_fullstats) {
-	                        $h_client{$client} = ($h_client{$client}) ? $h_client{$client}+1 : 1;
-    	                    $h_client_bytes{$client} = ($h_client_bytes{$client}) ? $h_client_bytes{$client}+$size : $size;
-						}
+			# bytes by mime type
+			if($o_fulluri) {
+				$h_uri_cbytes{$uri->path_query} = ($h_uri_cbytes{$uri->path_query}) ? $h_uri_cbytes{$uri->path_query} : $size;
+			} else {
+				$h_uri_cbytes{$uri->path} = ($h_uri_cbytes{$uri->path}) ? $h_uri_cbytes{$uri->path} : $size;
+			}
 
-                        # HIT & MISS
-                        if($varnish =~ /hit/) {
-                                $hit += 1; 
-								$hit_bytes += $size;
+			# HTTP CODE
+			$h_httpcode{$status}		= ($h_httpcode{$status})		? $h_httpcode{$status}+1 : 1;
+			$h_httpcode_bytes{$status}	= ($h_httpcode_bytes{$status})	? $h_httpcode_bytes{$status}+$size : $size;
 
-                                $h_vhost_hit{$uri->host}     = ($h_vhost_hit{$uri->host})     ? $h_vhost_hit{$uri->host}+1     : 1;
-                                $h_method_hit{$method}       = ($h_method_hit{$method})       ? $h_method_hit{$method}+1       : 1;
-                                $h_httpcode_hit{$status}     = ($h_httpcode_hit{$status})     ? $h_httpcode_hit{$status}+1     : 1;
-                                $h_mime_hit{$mime}           = ($h_mime_hit{$mime})           ? $h_mime_hit{$mime}+1           : 1;
-								if($o_fullstats) {
-	                                $h_uri_hit{$uri->path_query} = ($h_uri_hit{$uri->path_query}) ? $h_uri_hit{$uri->path_query}+1 : 1;
-    	                            $h_client_hit{$client}       = ($h_client_hit{$client})       ? $h_client_hit{$client}+1       : 1;
-								}
-                        }
-                        else {
-                                $miss += 1;
-								$miss_bytes += $size;
+			if($status =~ /404/ && $o_fullstats) {
+				if($o_fulluri) {
+					$h_httpcode_404{$uri->path_query}		= ($h_httpcode_404{$uri->path_query})		? $h_httpcode_404{$uri->path_query}+1 : 1;
+					$h_httpcode_404_bytes{$uri->path_query}	= ($h_httpcode_404_bytes{$uri->path_query})	? $h_httpcode_404_bytes{$uri->path_query}+$size : $size;
+				} else {
+					$h_httpcode_404{$uri->path}			= ($h_httpcode_404{$uri->path})			? $h_httpcode_404{$uri->path}+1 : 1;
+					$h_httpcode_404_bytes{$uri->path}	= ($h_httpcode_404_bytes{$uri->path})	? $h_httpcode_404_bytes{$uri->path}+$size : $size;
+				}
+			}
+			if($status =~ /500/ && $o_fullstats) {
+				if($o_fulluri) {
+					$h_httpcode_500{$uri->path_query}		= ($h_httpcode_500{$uri->path_query})		? $h_httpcode_500{$uri->path_query}+1 : 1;
+					$h_httpcode_500_bytes{$uri->path_query}	= ($h_httpcode_500_bytes{$uri->path_query})	? $h_httpcode_500_bytes{$uri->path_query}+$size : $size;
+				} else {
+					$h_httpcode_500{$uri->path}			= ($h_httpcode_500{$uri->path})			? $h_httpcode_500{$uri->path}+1 : 1;
+					$h_httpcode_500_bytes{$uri->path}	= ($h_httpcode_500_bytes{$uri->path})	? $h_httpcode_500_bytes{$uri->path}+$size : $size;
+				}
+			}
 
-                                $h_vhost_miss{$uri->host}     = ($h_vhost_miss{$uri->host})     ? $h_vhost_miss{$uri->host}+1     : 1;
-                                $h_method_miss{$method}       = ($h_method_miss{$method})       ? $h_method_miss{$method}+1       : 1;
-                                $h_httpcode_miss{$status}     = ($h_httpcode_miss{$status})     ? $h_httpcode_miss{$status}+1     : 1;
-                                $h_mime_miss{$mime}           = ($h_mime_miss{$mime})           ? $h_mime_miss{$mime}+1           : 1;
-								if($o_fullstats) {
-	                                $h_uri_miss{$uri->path_query} = ($h_uri_miss{$uri->path_query}) ? $h_uri_miss{$uri->path_query}+1 : 1;
-    	                            $h_client_miss{$client}       = ($h_client_miss{$client})       ? $h_client_miss{$client}+1       : 1;
-								}
-                        }
-                }
+			# Mime stats
+			$h_mime{$mime}			= ($h_mime{$mime})			? $h_mime{$mime}+1 : 1;
+			$h_mime_bytes{$mime}	= ($h_mime_bytes{$mime})	? $h_mime_bytes{$mime}+$size : $size;
 
-				# update progress bar if not in debug mode
-				if(!$o_debug) { update_progress($totalread, "Processing file ".$o_logfile." ..."); }
-        }
+			# Client
+			if($o_fullstats) {
+				$h_client{$client}			= ($h_client{$client})			? $h_client{$client}+1 : 1;
+				$h_client_bytes{$client}	= ($h_client_bytes{$client})	? $h_client_bytes{$client}+$size : $size;
+			}
 
-        close($fd);
+			# HIT & MISS
+			if($varnish =~ /hit/) {
+				$hit++; 
+				$hit_bytes += $size;
 
-		print "\n";
+				$h_vhost_hit{$uri->host}     = ($h_vhost_hit{$uri->host})     ? $h_vhost_hit{$uri->host}+1     : 1;
+				$h_method_hit{$method}       = ($h_method_hit{$method})       ? $h_method_hit{$method}+1       : 1;
+				$h_httpcode_hit{$status}     = ($h_httpcode_hit{$status})     ? $h_httpcode_hit{$status}+1     : 1;
+				$h_mime_hit{$mime}           = ($h_mime_hit{$mime})           ? $h_mime_hit{$mime}+1           : 1;
+				if($o_fullstats) {
+					if($o_fulluri) {
+						$h_uri_hit{$uri->path_query} = ($h_uri_hit{$uri->path_query}) ? $h_uri_hit{$uri->path_query}+1 : 1;
+					} else {
+						$h_uri_hit{$uri->path} = ($h_uri_hit{$uri->path}) ? $h_uri_hit{$uri->path}+1 : 1;
+					}
+					$h_client_hit{$client}       = ($h_client_hit{$client})       ? $h_client_hit{$client}+1       : 1;
+				}
+			} else {
+				$miss += 1;
+				$miss_bytes += $size;
 
-        return ($timestamp_stop-$timestamp_start);
+				$h_vhost_miss{$uri->host}     = ($h_vhost_miss{$uri->host})     ? $h_vhost_miss{$uri->host}+1     : 1;
+				$h_method_miss{$method}       = ($h_method_miss{$method})       ? $h_method_miss{$method}+1       : 1;
+				$h_httpcode_miss{$status}     = ($h_httpcode_miss{$status})     ? $h_httpcode_miss{$status}+1     : 1;
+				$h_mime_miss{$mime}           = ($h_mime_miss{$mime})           ? $h_mime_miss{$mime}+1           : 1;
+				if($o_fullstats) {
+					if($o_fulluri) {
+						$h_uri_miss{$uri->path_query} = ($h_uri_miss{$uri->path_query}) ? $h_uri_miss{$uri->path_query}+1 : 1;
+					} else {
+						$h_uri_miss{$uri->path} = ($h_uri_miss{$uri->path}) ? $h_uri_miss{$uri->path}+1 : 1;
+					}
+					$h_client_miss{$client}       = ($h_client_miss{$client})       ? $h_client_miss{$client}+1       : 1;
+				}
+			}
+		}
+
+		if($o_progress) { update_progress($totalread, "Processing file ".$o_logfile." ..."); }
+	}
+
+	close($fd);
+
+	print "\n";
+	return ($timestamp_stop-$timestamp_start);
 }
 
 
@@ -441,4 +483,3 @@ if($o_fullstats) {
     }
     print "$t\n";
 }
-
