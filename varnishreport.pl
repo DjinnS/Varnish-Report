@@ -36,12 +36,13 @@ use URI;
 # PARAMS
 
 # META
-my $version="0.2.0";
+my $version="0.2.5";
 
 # Options
-my ($o_help,$o_fullstats,$o_progress,$o_fulluri)=0;
+my ($o_help,$o_fullstats,$o_progress,$o_fulluri,$o_csv)=0;
 my ($i,$t,$o_logfile);
 my $o_top=10;
+my $csv;
 
 # Timestamp date
 my ($timestamp_start,$timestamp_stop,$totalrequest,$totalbytes,$duration)=0;
@@ -86,12 +87,17 @@ sub check_options {
 		'f'		=> \$o_fullstats,	'fullstats'		=> \$o_fullstats,
 		'p'		=> \$o_progress,	'progressbar'	=> \$o_progress,
 		'u'		=> \$o_fulluri,		'fulluri'		=> \$o_fulluri,
+		'c:s'	=> \$o_csv,			'csv:s'			=> \$o_csv,
 		'h'		=> \$o_help,		'help'			=> \$o_help
 	);
 
-    if (!defined($o_logfile)||($o_help)) {
+    if (!defined($o_logfile)||($o_help)||($o_csv =~ '//')) {
 		usage();
 		exit;
+	}
+
+	if($o_csv !~ 0) {
+		open($csv,'>',$o_csv) or die "ERROR: can't open csv file ($!)\n\n";
 	}
 }
 
@@ -108,10 +114,12 @@ Required parameters:
 	-l,--logfile /path/to/access/log\t: path to the log file
 	
 Optional parameters:
-	-f,--fullstats\t: print extra statitics. Default none.
-	-t,--top\t: number of lines for of extra statitics. Default 10.
-	-u,--fulluri\t: use full uri (URI+query string) in the full statistics mode. Default none.
-	-p,--progress\t: print progress bar. Default none.
+	-f,--fullstats\t: print extra statitics. Default none
+	-t,--top\t: number of lines for of extra statitics. Default 10
+	-u,--fulluri\t: use full uri (URI+query string) in the full statistics mode. Default none
+	-p,--progress\t: print progress bar. Default none
+
+	-c,--csv /path/to/file.csv\t: save to csv file
 
 	-h,--help\t: print this menu
 
@@ -280,7 +288,6 @@ sub parsing {
 
 	close($fd);
 
-	print "\n";
 	return ($timestamp_stop-$timestamp_start);
 }
 
@@ -288,13 +295,20 @@ sub parsing {
 #------------------------------------------------
 # MAIN
 
-print "\nVarnish Report - ".$version."\n\n";
+print "\nVarnish Report - $version\n\n";
 
 check_options();
 
 $duration=parsing();
 
-printf "\nLog start: %20s\nLog end  : %20s\n\n",scalar(localtime($timestamp_start)),scalar(localtime($timestamp_stop));
+printf "\n\nLog start: %20s\nLog end  : %20s\n\n",scalar(localtime($timestamp_start)),scalar(localtime($timestamp_stop));
+
+if(defined($csv)) {
+	print $csv "Varnish Report - $version;\n";
+	print $csv ";\n";
+	print $csv "Log start;%20s;Log end;%20s;\n",scalar(localtime($timestamp_start)),scalar(localtime($timestamp_stop));
+	print $csv ";\n";
+}
 
 # Summary stats
 $t = Text::ASCIITable->new({ headingText => 'Summary'},'outputWidth',80);
@@ -305,6 +319,16 @@ $t->addRow("Hit",$hit,sprintf("%10.2f",$hit/$duration)." hit/s");
 $t->addRow("Miss",$miss,sprintf("%10.2f",$miss/$duration)." hit/s");
 print "$t\n";
 
+if(defined($csv)) {
+	print $csv "Summary;\n";
+	print $csv "Date;Value;Rate;\n";
+	print $csv "Request;$totalrequest;".sprintf("%.2f",$totalrequest/$duration)." req/s;\n";
+	print $csv "Bytes;$totalbytes;".sprintf("%.2f",$totalbytes/$duration/1024/1024)." MB/s;\n";
+	print $csv "Hit;$hit;".sprintf("%.2f",$hit/$duration)." hit/s;\n";
+	print $csv "Miss;$miss;".sprintf("%.2f",$miss/$duration)." hit/s;\n";
+	print $csv ";\n";
+}
+
 # Cache stats
 $t = Text::ASCIITable->new({ headingText => 'Varnish cache stats' },'outputWidth',80);
 $t->setCols('Status','Hit','Size (Mb)','req/s','Rate (%)');
@@ -312,9 +336,22 @@ $t->addRow("HIT",$hit,sprintf("%.2f",$hit_bytes/1024/1024),sprintf("%.2f",$hit/$
 $t->addRow("MISS",$miss,sprintf("%.2f",$miss_bytes/1024/1024),sprintf("%.2f",$miss/$duration),sprintf("%.2f",($miss*100)/$totalrequest));
 print "$t\n";
 
+if($csv) {
+	print $csv "Varnish cache stats;\n";
+	print $csv "Status;Hit;Size (Mb);req/s;Rate (%);\n";
+	print $csv "HIT;$hit;".sprintf("%.2f",$hit_bytes/1024/1024).";".sprintf("%.2f",$hit/$duration).";".sprintf("%.2f",($hit*100)/$totalrequest).";\n";
+	print $csv "MISS;$miss;".sprintf("%.2f",$miss_bytes/1024/1024).";".sprintf("%.2f",$miss/$duration).";".sprintf("%.2f",($miss*100)/$totalrequest).";\n";
+	print $csv ";\n";
+}
+
 # HTTP CODE STATS
 $t = Text::ASCIITable->new({ headingText => 'HTTP status code' },'outputWidth',80);
 $t->setCols('HTTP Code','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+
+if($csv) {
+	print $csv "HTTP status code;\n";
+	print $csv "HTTP Code;Hit;Size (Mb);req/s;Rate (%);hit (%);miss (%);\n";
+}
 
 foreach my $k (sort {$h_httpcode{$b} <=> $h_httpcode{$a}} keys(%h_httpcode) ) {
 	$t->addRow($k,
@@ -324,12 +361,25 @@ foreach my $k (sort {$h_httpcode{$b} <=> $h_httpcode{$a}} keys(%h_httpcode) ) {
 		sprintf("%.2f",($h_httpcode{$k}*100)/$totalrequest),
 		sprintf("%.2f",((($h_httpcode_hit{$k}) ? $h_httpcode_hit{$k} : 0)*100)/$h_httpcode{$k}),
 		sprintf("%.2f",((($h_httpcode_miss{$k})? $h_httpcode_miss{$k}: 0)*100)/$h_httpcode{$k}));
+
+	if($csv) {
+		print $csv "$k;$h_httpcode{$k};".sprintf("%.2f",$h_httpcode_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_httpcode{$k}/$duration).";".sprintf("%.2f",($h_httpcode{$k}*100)/$totalrequest).";".sprintf("%.2f",((($h_httpcode_hit{$k}) ? $h_httpcode_hit{$k} : 0)*100)/$h_httpcode{$k}).";".sprintf("%.2f",((($h_httpcode_miss{$k})? $h_httpcode_miss{$k}: 0)*100)/$h_httpcode{$k}).";\n";
+	}
 }
 print "$t\n";
+
+if($csv) {
+	print $csv ";\n";
+}
 
 # HTTP METHOD STATS
 $t = Text::ASCIITable->new({ headingText => 'HTTP Request method' },'outputWidth',80);
 $t->setCols('HTTP Method','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+
+if($csv) {
+	print $csv "HTTP Request method;\n";
+	print $csv "HTTP Method;Hit;Size (Mb);req/s;Rate (%);hit (%);miss (%);\n";
+}
 
 foreach my $k (sort {$h_method{$b} <=> $h_method{$a}} keys(%h_method) ) {
 	$t->addRow($k,
@@ -339,8 +389,16 @@ foreach my $k (sort {$h_method{$b} <=> $h_method{$a}} keys(%h_method) ) {
 		sprintf("%.2f",($h_method{$k}*100)/$totalrequest),
 		sprintf("%.2f",((($h_method_hit{$k}) ? $h_method_hit{$k} : 0)*100)/$h_method{$k}),
 		sprintf("%.2f",((($h_method_miss{$k})? $h_method_miss{$k}: 0)*100)/$h_method{$k}));
+
+	if($csv) {
+		print $csv "$k;$h_method{$k};".sprintf("%.2f",$h_method_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_method{$k}/$duration).";".sprintf("%.2f",($h_method{$k}*100)/$totalrequest).";".sprintf("%.2f",((($h_method_hit{$k}) ? $h_method_hit{$k} : 0)*100)/$h_method{$k}).";".sprintf("%.2f",((($h_method_miss{$k})? $h_method_miss{$k}: 0)*100)/$h_method{$k}).";\n";
+	}
 }
 print "$t\n";
+
+if($csv) {
+	print $csv ";\n";
+}
 
 # MIME STATS
 $t = Text::ASCIITable->new({ headingText => 'MIME STATS' },'outputWidth',80);
@@ -354,12 +412,25 @@ foreach my $k (sort {$h_mime{$b} <=> $h_mime{$a}} keys(%h_mime)) {
         sprintf("%.2f",($h_mime{$k}*100)/$totalrequest),
         sprintf("%.2f",((($h_mime_hit{$k}) ? $h_mime_hit{$k} : 0)*100)/$h_mime{$k}),
         sprintf("%.2f",((($h_mime_miss{$k})? $h_mime_miss{$k}: 0)*100)/$h_mime{$k}));
+
+	if($csv) {
+		print $csv "$k;$h_mime{$k};".sprintf("%.2f",$h_mime_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_mime{$k}/$duration).";".sprintf("%.2f",($h_mime{$k}*100)/$totalrequest).";".sprintf("%.2f",((($h_mime_hit{$k}) ? $h_mime_hit{$k} : 0)*100)/$h_mime{$k}).";".sprintf("%.2f",((($h_mime_miss{$k})? $h_mime_miss{$k}: 0)*100)/$h_mime{$k}).";\n";
+	}
 }
 print "$t\n";
+
+if($csv) {
+	print $csv ";\n";
+}
 
 # HTTP VHOST STATS
 $t = Text::ASCIITable->new({ headingText => 'VHOST' },'outputWidth',80);
 $t->setCols('VHOST','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+
+if($csv) {
+	print $csv "VHOST;\n";
+	print $csv "VHOST;Hit;Size (Mb);req/s;Rate (%);hit (%);miss (%);\n";
+}
 
 foreach my $k (sort {$h_vhost{$b} <=> $h_vhost{$a}} keys(%h_vhost) ) {
     $t->addRow($k,
@@ -369,14 +440,27 @@ foreach my $k (sort {$h_vhost{$b} <=> $h_vhost{$a}} keys(%h_vhost) ) {
         sprintf("%.2f",($h_vhost{$k}*100)/$totalrequest),
         sprintf("%.2f",((($h_vhost_hit{$k}) ? $h_vhost_hit{$k} : 0)*100)/$h_vhost{$k}),
         sprintf("%.2f",((($h_vhost_miss{$k})? $h_vhost_miss{$k}: 0)*100)/$h_vhost{$k}));
+
+	if($csv) {
+		print $csv "$k;$h_vhost{$k};".sprintf("%.2f",$h_vhost_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_vhost{$k}/$duration).";".sprintf("%.2f",($h_vhost{$k}*100)/$totalrequest).";".sprintf("%.2f",((($h_vhost_hit{$k}) ? $h_vhost_hit{$k} : 0)*100)/$h_vhost{$k}).";".sprintf("%.2f",((($h_vhost_miss{$k})? $h_vhost_miss{$k}: 0)*100)/$h_vhost{$k}).";\n";
+	}
 }
 print "$t\n";
+
+if($csv) {
+	print $csv ";\n";
+}
 
 if($o_fullstats) {
 
 	# TOP CLIENT
 	$t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' clients' },'outputWidth',80);
 	$t->setCols('Client','Hit','Size (Mb)','req/s','Rate (%)','hit (%)','miss (%)');
+
+	if($csv) {
+		print $csv "TOP $o_top clients;\n";
+		print $csv "Client;Hit;Size (Mb);req/s;Rate (%);hit (%);miss (%);\n";
+	}
 
 	$i=0;
 	foreach my $k (sort {$h_client{$b} <=> $h_client{$a}} keys(%h_client) ) {
@@ -389,10 +473,18 @@ if($o_fullstats) {
 	        sprintf("%.2f",((($h_client_hit{$k}) ? $h_client_hit{$k} : 0)*100)/$h_client{$k}),
 	        sprintf("%.2f",((($h_client_miss{$k})? $h_client_miss{$k}: 0)*100)/$h_client{$k}));
 
-			last if($i++>$o_top);
+		last if($i++>$o_top);
+
+		if($csv) {
+			print $csv "$k;$h_client{$k};".sprintf("%.2f",$h_client_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_client{$k}/$duration).";".sprintf("%.2f",($h_client{$k}*100)/$totalrequest).";".sprintf("%.2f",((($h_client_hit{$k}) ? $h_client_hit{$k} : 0)*100)/$h_client{$k}).";".sprintf("%.2f",((($h_client_miss{$k})? $h_client_miss{$k}: 0)*100)/$h_client{$k}).";\n";
+		}
 	}
 
 	print "$t\n";
+
+	if($csv) {
+		print $csv ";\n";
+	}
 
 	# TOP URL
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' URI' },'outputWidth',80);
@@ -401,7 +493,7 @@ if($o_fullstats) {
 	$i=0;
 	foreach my $k (sort {$h_uri{$b} <=> $h_uri{$a}} keys(%h_uri) ) {
 
-        $t->addRow((length($k)>80) ? substr($k,0,37)."[...]".substr($k,length($k)-38,length($k)) : $k,
+		$t->addRow((length($k)>80) ? substr($k,0,37)."[...]".substr($k,length($k)-38,length($k)) : $k,
             $h_uri{$k},
             sprintf("%.2f",$h_uri_bytes{$k}/1024/1024),
             sprintf("%.2f",$h_uri{$k}/$duration),
@@ -409,13 +501,26 @@ if($o_fullstats) {
             sprintf("%.2f",((($h_uri_hit{$k}) ? $h_uri_hit{$k} : 0)*100)/$h_uri{$k}),
             sprintf("%.2f",((($h_uri_miss{$k})? $h_uri_miss{$k}: 0)*100)/$h_uri{$k}));
 
-			last if($i++>$o_top);
+		last if($i++>$o_top);
+
+		if($csv) {
+			print $csv "$k;$h_uri{$k};".sprintf("%.2f",$h_uri_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_uri{$k}/$duration).";".sprintf("%.2f",($h_uri{$k}*100)/$totalrequest).";".sprintf("%.2f",((($h_uri_hit{$k}) ? $h_uri_hit{$k} : 0)*100)/$h_uri{$k}).";".sprintf("%.2f",((($h_uri_miss{$k})? $h_uri_miss{$k}: 0)*100)/$h_uri{$k}).";\n";
+		}
     }
     print "$t\n";
+
+	if($csv) {
+		print $csv ";\n";
+	}
 
 	# TOP HIT URI
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' HIT URI' },'outputWidth',80);
     $t->setCols('Hit URI','Hit','Size (Mb)','req/s','Rate (%)','hit (%)');
+
+	if($csv) {
+		print $csv "TOP $o_top HIT URI;\n";
+		print $csv "Hit URI;Hit;Size (Mb);req/s;Rate (%);hit (%);\n";
+	}
 
     $i=0;
 	foreach my $k (sort {$h_uri_hit{$b} <=> $h_uri_hit{$a}} keys(%h_uri_hit) ) {
@@ -427,13 +532,24 @@ if($o_fullstats) {
             sprintf("%.2f",($h_uri_hit{$k}*100)/$totalrequest),
             sprintf("%.2f",((($h_uri_hit{$k}) ? $h_uri_hit{$k} : 0)*100)/$h_uri{$k}));
 
-            last if($i++>$o_top);
+		last if($i++>$o_top);
+
+		print $csv "$k;$h_uri_hit{$k};".sprintf("%.2f",$h_uri_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_uri_hit{$k}/$duration).";".sprintf("%.2f",($h_uri_hit{$k}*100)/$totalrequest).";".sprintf("%.2f",((($h_uri_hit{$k}) ? $h_uri_hit{$k} : 0)*100)/$h_uri{$k}).";\n";
     }
     print "$t\n";
+
+	if($csv) {
+		print $csv ";\n";
+	}
 
 	# TOP MISS URI
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' MISS URI' },'outputWidth',80);
     $t->setCols('Miss URI','Hit','Size (Mb)','req/s','Rate (%)','miss (%)');
+
+	if($csv) {
+		print $csv "TOP $o_top MISS URI;\n";
+		print $csv "Miss URI;Hit;Size (Mb);req/s;Rate (%);miss (%);\n";
+	}
 
     $i=0;
 	foreach my $k (sort {$h_uri_miss{$b} <=> $h_uri_miss{$a}} keys(%h_uri_miss) ) {
@@ -445,13 +561,26 @@ if($o_fullstats) {
             sprintf("%.2f",($h_uri_miss{$k}*100)/$totalrequest),
             sprintf("%.2f",((($h_uri_miss{$k}) ? $h_uri_miss{$k} : 0)*100)/$h_uri{$k}));
 
-            last if($i++>$o_top);
+		last if($i++>$o_top);
+
+		if($csv) {
+			print $csv "$k;$h_uri_miss{$k};".sprintf("%.2f",$h_uri_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_uri_miss{$k}/$duration).";".sprintf("%.2f",($h_uri_miss{$k}*100)/$totalrequest).";".sprintf("%.2f",((($h_uri_miss{$k}) ? $h_uri_miss{$k} : 0)*100)/$h_uri{$k}).";\n";
+		}
     }
     print "$t\n";
 
-    # TOP 404
+   	if($csv) {
+		print $csv ";\n";
+	}
+
+	# TOP 404
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' 404' },'outputWidth',80);
     $t->setCols('404 URI','Hit','Size (Mb)','req/s','Rate (%)');
+
+	if($csv) {
+		print $csv "TOP $o_top 404;\n";
+		print $csv "404 URI;Hit;Size (Mb);req/s;Rate (%);\n";
+	}
 
     $i=0;
 	foreach my $k (sort {$h_httpcode_404{$b} <=> $h_httpcode_404{$a}} keys(%h_httpcode_404) ) {
@@ -462,13 +591,26 @@ if($o_fullstats) {
             sprintf("%.2f",$h_httpcode_404{$k}/$duration),
             sprintf("%.2f",($h_httpcode_404{$k}*100)/$totalrequest));
 
-            last if($i++>$o_top);
+		last if($i++>$o_top);
+
+		if($csv) {
+			print $csv "$k;$h_httpcode_404{$k};".sprintf("%.2f",$h_httpcode_404_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_httpcode_404{$k}/$duration).";".sprintf("%.2f",($h_httpcode_404{$k}*100)/$totalrequest).";\n";
+		}
     }
     print "$t\n";
+
+	if($csv) {
+		print $csv ";\n";
+	}
 
     # TOP 500
     $t = Text::ASCIITable->new({ headingText => 'TOP '.$o_top.' 500' },'outputWidth',80);
     $t->setCols('500 URI','Hit','Size (Mb)','req/s','Rate (%)');
+
+	if($csv) {
+		print $csv "TOP $o_top 500;\n";
+		print $csv "500 URI;Hit;Size (Mb);req/s;Rate (%);\n";
+	}
 
     $i=0;
 	foreach my $k (sort {$h_httpcode_500{$b} <=> $h_httpcode_500{$a}} keys(%h_httpcode_500) ) {
@@ -479,7 +621,18 @@ if($o_fullstats) {
             sprintf("%.2f",$h_httpcode_500{$k}/$duration),
             sprintf("%.2f",($h_httpcode_500{$k}*100)/$totalrequest));
 
-            last if($i++>$o_top);
+		last if($i++>$o_top);
+
+		if($csv) {
+			print $csv "$k;$h_httpcode_500{$k};".sprintf("%.2f",$h_httpcode_500_bytes{$k}/1024/1024).";".sprintf("%.2f",$h_httpcode_500{$k}/$duration).";".sprintf("%.2f",($h_httpcode_500{$k}*100)/$totalrequest).";\n";
+		}
     }
     print "$t\n";
+
+	if($csv) {
+		print $csv ";\n";
+	}
 }
+
+if($csv) { close($csv); }
+
