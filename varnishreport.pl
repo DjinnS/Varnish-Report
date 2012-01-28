@@ -39,10 +39,10 @@ use URI;
 my $version="0.2.5";
 
 # Options
-my ($o_help,$o_fullstats,$o_progress,$o_fulluri,$o_csv)=0;
+my ($o_help,$o_fullstats,$o_progress,$o_fulluri)=0;
 my ($i,$t,$o_logfile);
 my $o_top=10;
-my $csv;
+my $csv; my $o_csv="none";
 
 # Timestamp date
 my ($timestamp_start,$timestamp_stop,$totalrequest,$totalbytes,$duration)=0;
@@ -91,12 +91,12 @@ sub check_options {
 		'h'		=> \$o_help,		'help'			=> \$o_help
 	);
 
-    if (!defined($o_logfile)||($o_help)||($o_csv =~ '//')) {
+    if (!defined($o_logfile)||($o_help)) {
 		usage();
 		exit;
 	}
 
-	if($o_csv !~ 0) {
+	if($o_csv !~ "none") {
 		open($csv,'>',$o_csv) or die "ERROR: can't open csv file ($!)\n\n";
 	}
 }
