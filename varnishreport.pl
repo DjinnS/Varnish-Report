@@ -36,7 +36,7 @@ use URI;
 # PARAMS
 
 # META
-my $version="0.2.5";
+my $version="0.2.7";
 
 # Options
 my ($o_help,$o_fullstats,$o_progress,$o_fulluri,$o_vhost)=0;
