@@ -15,8 +15,8 @@ How to install it:
 
 			- Getopt::Long;
 			- DateTime (Debian: apt-get install libdatetime-perl)
-			- Text::ASCIITable (cpan: install Text::ASCIITable)
-			- ProgressBar::Stack  (cpan: install ProgressBar::Stack)
+			- Text::ASCIITable (Debian: apt-get install libtext-asciitable-perl / cpan: install Text::ASCIITable)
+			- ProgressBar::Stack (Debian: apt-get install libterm-progressbar-perl / cpan: install ProgressBar::Stack)
 			- URI (Debian: apt-get install liburi-perl)
 
 How to use it:
